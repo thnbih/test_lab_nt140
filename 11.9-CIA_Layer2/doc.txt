@@ -1,0 +1,6 @@
+information se: confidentiality (The idea that only authorized users can access specific assets or data, the info which just be read and understand by the auth user), integrity (The idea that the data is correct, authentic, and reliable; knowing when the info's modified), availability (The idea that data is accessible and response to those who are authorized to access it in a limit time), authorization, non-repudiation (shared responsibility)
+
+data in motion: data's tranfered in protocol (email, web post, network, im chat)
+data at rest: data stay in storage (file share, db, desktop/laptop)
+data in use: data is accessed, modified (data loss prevention endpoint) (removable media, printer, screen, clipboard)
+

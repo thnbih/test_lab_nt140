@@ -1,0 +1,133 @@
+Dos/DDoS: layer 3 - ICMP, layer 4 - TCP/UDP, layer 7 - HTTP: Protocols
+- DDoS at leyer 7: 
+
+Object of DDoS: computing, network
+
+Assignment: build a high availability e commerce system:
+	- Microservices, APICoateway, Identity, Notifi, KafKa, ELK, Promotheus + Kimtan
+	- Server(hardware includes: 2 cpu, 2 Dish (RAID), 2 Ram, 2 Card network, 2 PSU, 2 main (2 main to virtualization) + app (load balencer, separate database: cluster database, separate document: object storage) + others (2 internet lines: network load balancer, 2 firewall)
+
+Homework: build a highest availability system (a page archi, a page explain)
+
+A low-level design (LLD) of a high-availability e-commerce system would provide more granular details about the technologies, services, and how they interact at the component level. Below is a more detailed breakdown for each component:
+
+---
+
+### **1. Client/Frontend Layer**
+   - **User Device**: The e-commerce platform is accessed via web, mobile app, or API.
+   - **CDN (Content Delivery Network)**: 
+     - **CloudFront** (AWS), **Akamai**, or **Google Cloud CDN** caches static content (images, CSS, JavaScript, etc.) across multiple edge locations for faster access.
+     - Requests for static content are served directly by the CDN, while dynamic content is forwarded to the backend.
+
+---
+
+### **2. Load Balancer Layer**
+   - **Global Load Balancers**:
+     - AWS Global Accelerator, Google Cloud Load Balancer, or Azure Traffic Manager ensures that traffic is distributed across multiple regions based on latency, health checks, and traffic policies.
+     - It can handle failover between regions in case of an entire region failure.
+   - **Application Load Balancers (ALB)**:
+     - Each region has an ALB that routes traffic to microservices (running on Kubernetes or ECS) based on URLs or protocols (e.g., HTTP/HTTPS).
+
+---
+
+### **3. Application Layer (Microservices Architecture)**
+   - **Kubernetes (K8s) / Amazon ECS / Google GKE / Azure AKS**:
+     - Stateless microservices are deployed in containers using **Docker**.
+     - Services include:
+       - **Product Service**: Manages product catalog, product searches, etc.
+       - **User Service**: Manages user authentication, sessions, profiles.
+       - **Order Service**: Manages order creation, tracking, and history.
+       - **Payment Service**: Handles payment integration, including third-party gateways like Stripe, PayPal.
+       - **Inventory Service**: Manages inventory, stock levels, warehouses.
+       - **Shipping Service**: Manages shipping orders, tracking, and logistics.
+       - **Notification Service**: Sends notifications via email, SMS, or in-app messaging.
+   - **Service Discovery**:
+     - **Consul** or **Istio** for service discovery and inter-service communication.
+   - **API Gateway**:
+     - **Amazon API Gateway** or **Kong API Gateway** for routing API calls to the correct microservice.
+
+---
+
+### **4. Database Layer**
+   - **Relational Database**:
+     - Use **Amazon Aurora Global Database** (multi-region) or **Google Cloud Spanner**.
+     - Strong consistency across regions with read replicas available locally in each region for faster reads.
+     - **Multi-master replication** ensures writes can happen in any region with conflict resolution.
+     - Partitioning and sharding of data for better scalability.
+   - **NoSQL Databases**:
+     - **Amazon DynamoDB** or **Google Cloud Firestore** can be used for non-relational data (e.g., user sessions, shopping carts, or product reviews).
+     - **Cassandra** (distributed, fault-tolerant) could be used as an alternative for high-throughput requirements.
+   - **Caching Layer**:
+     - **Redis** or **Memcached** cluster deployed with replication and persistence enabled, possibly using **AWS ElastiCache** or **Google Memorystore** for caching frequently accessed data (product details, user sessions, etc.).
+   
+---
+
+### **5. Queueing & Asynchronous Processing Layer**
+   - **Message Queue**:
+     - **Apache Kafka**, **Amazon SQS**, or **Google Pub/Sub** for handling asynchronous messaging between services, such as:
+       - Processing order payments and inventory updates.
+       - Sending notifications to users after purchase.
+   - **Event-Driven Architecture**:
+     - Use of **AWS EventBridge** or **Google Eventarc** for triggering workflows based on system events (e.g., order creation triggers inventory updates and payment processing).
+
+---
+
+### **6. File Storage**
+   - **Object Storage**:
+     - **Amazon S3** or **Google Cloud Storage** for storing files such as product images, invoices, etc.
+     - **Cross-region replication** ensures that files are available even in case of a regional failure.
+   - **Content Delivery**:
+     - Files are served to end users via the CDN (e.g., CloudFront, Akamai).
+
+---
+
+### **7. Security Layer**
+   - **Web Application Firewall (WAF)**:
+     - **AWS WAF**, **Google Cloud Armor**, or **Azure WAF** to protect against common threats (SQL injection, XSS, etc.).
+   - **DDoS Protection**:
+     - Use **AWS Shield** or **Google Cloud Armor** to defend against distributed denial-of-service attacks.
+   - **Identity and Access Management (IAM)**:
+     - Secure roles and permissions using **AWS IAM**, **Google IAM**, or **Azure Active Directory**.
+   - **Data Encryption**:
+     - **KMS (Key Management Service)** for managing encryption keys and encrypting data at rest and in transit (TLS/SSL).
+   
+---
+
+### **8. Monitoring and Observability**
+   - **Logging**:
+     - Centralized logging with **ELK Stack** (Elasticsearch, Logstash, Kibana) or **AWS CloudWatch**.
+     - Structured logging of API requests and application errors.
+   - **Monitoring**:
+     - **Prometheus/Grafana** or **AWS CloudWatch** for real-time metrics and health checks of services.
+     - Alerts for service failures or performance degradation using **PagerDuty** or **AWS SNS**.
+   - **Tracing**:
+     - Distributed tracing with **Jaeger** or **AWS X-Ray** to trace requests through the entire system.
+   
+---
+
+### **9. Redundancy & Disaster Recovery**
+   - **Multi-Region Active-Active Setup**:
+     - The application is deployed in multiple regions. Each region can handle the full load, with automatic failover in case one region goes down.
+   - **Cross-Region Database Replication**:
+     - Both relational and non-relational databases have real-time cross-region replication.
+   - **Backups**:
+     - Automatic backups and snapshots using **Amazon S3 Glacier** for long-term storage of backups.
+   - **Disaster Recovery Plan**:
+     - Ensure **RTO** (Recovery Time Objective) and **RPO** (Recovery Point Objective) are near zero by enabling automatic failover mechanisms for databases, microservices, and storage.
+
+---
+
+### Detailed Flow Example: Placing an Order
+
+1. **Request**: A customer places an order via the web app or mobile app, sending a request through the **API Gateway**.
+2. **Load Balancer**: The request is routed through the **Global Load Balancer** to the nearest regional **Application Load Balancer** (ALB).
+3. **Microservice Call**: The **Order Service** receives the request and processes it using the **Payment Service** and **Inventory Service**.
+4. **Asynchronous Processing**: The **Order Service** sends messages to a **Kafka** topic or **SQS queue** to notify the **Notification Service** (for order confirmation emails) and the **Shipping Service** (for shipping orders).
+5. **Database Update**: All order details, inventory updates, and payment confirmations are saved to the **Aurora DB** or **Spanner DB** with real-time replication across regions.
+6. **Response**: The **Order Service** returns a confirmation to the user, completing the transaction.
+
+---
+
+This design provides a high level of redundancy, fault tolerance, scalability, and security, ensuring the highest possible availability for an e-commerce platform.
+
+Let me know if you need more details on any specific component!
